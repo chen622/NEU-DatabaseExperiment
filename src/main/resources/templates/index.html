@@ -33,7 +33,7 @@
             </md-toolbar>
 
             <md-list>
-                <md-list-item @click="showGraph">
+                <md-list-item >
                     <md-icon>map</md-icon>
                     <span class="md-list-item-text">景点分布图</span>
                 </md-list-item>
@@ -42,7 +42,26 @@
         </md-app-drawer>
 
         <md-app-content style="min-height: 600px">
-
+            <div class="md-layout md-alignment-top-center">
+                <md-card class="md-layout-item md-size-70">
+                    <md-card-area>
+                        <md-card-media>
+                            <img src="/static/img/index.jpg" alt="scene">
+                        </md-card-media>
+                        <md-card-header>
+                            <div class="md-title"><b>额尔古纳河</b></div>
+                            <div class="md-subhead">黑龙江源头</div>
+                        </md-card-header>
+                        <md-card-content style="text-indent: 2em">
+                            额尔古纳河，是黑龙江正源，史称“望建河”，是通古斯语（鄂温克语）honkirnaur的音译，意思为鄂温克江。在《旧唐书》中称之为望建河，在《蒙古秘史》中称之为额尔古涅河，在《元史》中称之为也里古纳河，在《明史》中称之为阿鲁那么连，自清代开始称之为额尔古纳河。位于内蒙古自治区东北部呼伦贝尔地区，为中俄界河。
+                        </md-card-content>
+                    </md-card-area>
+                    <md-card-actions md-alignment="right">
+                        <md-button class="md-primary">浏览景点</md-button>
+                        <md-button class="md-primary">推荐路线</md-button>
+                    </md-card-actions>
+                </md-card>
+            </div>
 
         </md-app-content>
     </md-app>
