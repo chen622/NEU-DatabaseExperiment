@@ -38,7 +38,7 @@
                     <md-icon>watch</md-icon>
                     <span class="md-list-item-text">电表信息录入</span>
                 </md-list-item>
-                <md-list-item>
+                <md-list-item @click="showUser">
                     <md-icon>contacts</md-icon>
                     <span class="md-list-item-text">电力用户查询</span>
                 </md-list-item>
@@ -71,16 +71,15 @@
                         </md-card-content>
                     </md-card-area>
                     <md-card-actions md-alignment="right">
-                        <md-button class="md-primary">浏览景点</md-button>
-                        <md-button class="md-primary">推荐路线</md-button>
+                        <md-button class="md-primary">缴费</md-button>
                     </md-card-actions>
                 </md-card>
 
-                <md-table v-model="searched" v-else-if="step===2" md-sort="id" md-sort-order="asc" md-card
+                <md-table v-model="searched" v-else-if="step===2" md-sort="check_id" md-sort-order="asc" md-card
                           class="md-layout-item md-size-90">
                     <md-table-toolbar>
                         <div class="md-toolbar-section-start">
-                            <h1 class="md-title">Users</h1>
+                            <h1 class="md-title">抄表记录</h1>
                         </div>
                         <md-field md-clearable class="md-toolbar-section-end">
                             <md-input placeholder="搜索。。。" v-model="search" @input="searchOnTable"/>
@@ -94,7 +93,8 @@
                     </md-table-empty-state>
 
                     <md-table-row slot="md-table-row" slot-scope="{ item }">
-                        <md-table-cell md-label="ID" md-sort-by="id" md-numeric>{{ item.check_id }}</md-table-cell>
+                        <md-table-cell md-label="ID" md-sort-by="check_id" md-numeric>{{ item.check_id }}
+                        </md-table-cell>
                         <md-table-cell md-label="设备编号" md-sort-by="equipment_id">{{ item.equipment_id }}</md-table-cell>
                         <md-table-cell md-label="本次度数" md-sort-by="degree">{{ item.degree }}</md-table-cell>
                         <md-table-cell md-label="上次度数" md-sort-by="last_degree">{{ item.last_degree }}</md-table-cell>
@@ -102,16 +102,110 @@
                         <md-table-cell md-label="抄表人" md-sort-by="recorder">{{ item.recorder }}</md-table-cell>
                     </md-table-row>
                 </md-table>
+
+                <md-table v-model="searched" v-else-if="step===3" md-sort="user_id" md-sort-order="asc" md-card
+                          class="md-layout-item md-size-90">
+                    <md-table-toolbar>
+                        <div class="md-toolbar-section-start">
+                            <h1 class="md-title">电力用户</h1>
+                        </div>
+                        <md-field md-clearable class="md-toolbar-section-end">
+                            <md-input placeholder="搜索。。。" v-model="search" @input="searchOnTable"/>
+                        </md-field>
+                    </md-table-toolbar>
+
+                    <md-table-empty-state
+                            md-label="无对应用户信息"
+                            :md-description="`不存在与 '${search}' 相关的用户信息. 请尝试检查后重新输入！`">
+
+                    </md-table-empty-state>
+
+                    <md-table-row slot="md-table-row" slot-scope="{ item }">
+                        <md-table-cell md-label="ID" md-sort-by="user_id" md-numeric>{{ item.user_id }}</md-table-cell>
+                        <md-table-cell md-label="用户姓名" md-sort-by="name">{{ item.name }}</md-table-cell>
+                        <md-table-cell md-label="余额" md-sort-by="balance">{{ item.balance }}</md-table-cell>
+                        <md-table-cell md-label="地址" md-sort-by="address">{{ item.address }}</md-table-cell>
+                        <md-table-cell md-label="设备数量" md-sort-by="amount">{{ item.equipment_amount }}</md-table-cell>
+                        <md-table-cell md-label="代缴总额" md-sort-by="debt">{{ item.debt }}</md-table-cell>
+                    </md-table-row>
+                </md-table>
+
+                <md-table v-model="searched" v-else-if="step===4" md-sort="equipment_id" md-sort-order="asc" md-card
+                          class="md-layout-item md-size-90">
+                    <md-table-toolbar>
+                        <div class="md-toolbar-section-start">
+                            <h1 class="md-title">电力设备</h1>
+                        </div>
+                        <md-field md-clearable class="md-toolbar-section-end">
+                            <md-input placeholder="搜索。。。" v-model="search" @input="searchOnTable"/>
+                        </md-field>
+                    </md-table-toolbar>
+
+                    <md-table-empty-state
+                            md-label="无对应电力设备信息"
+                            :md-description="`不存在与 '${search}' 相关的电力设备. 请尝试检查后重新输入！`">
+                    </md-table-empty-state>
+
+                    <md-table-row slot="md-table-row" slot-scope="{ item }">
+                        <md-table-cell md-label="设备编号" md-sort-by="equipment_id" md-numeric>{{ item.equipment_id }}
+                        </md-table-cell>
+                        <md-table-cell md-label="度数" md-sort-by="degree">{{ item.degree }}</md-table-cell>
+                        <md-table-cell md-label="用户编号" md-sort-by="user_id">{{ item.user_id }}</md-table-cell>
+                        <md-table-cell md-label="用户姓名" md-sort-by="name">{{item.name}}</md-table-cell>
+                        <md-table-cell md-label="类别" md-sort-by="category">{{ item.category=='01'?'居民':'商业' }}
+                        </md-table-cell>
+                    </md-table-row>
+                </md-table>
+
             </div>
         </md-app-content>
     </md-app>
 
+    <md-dialog :md-active.sync="showDialog">
+        <md-dialog-title>创建新设备</md-dialog-title>
+        <div v-if="step===3" class="createDialog md-layout md-alignment-top-center">
+            <md-field class="md-layout-item md-size-80">
+                <label>姓名</label>
+                <md-input v-model="newUser.name"></md-input>
+            </md-field>
+            <md-field class="md-layout-item md-size-80">
+                <label>地址</label>
+                <md-input v-model="newUser.address"></md-input>
+            </md-field>
+            <md-field class="md-layout-item md-size-80">
+                <label>余额</label>
+                <md-input v-model="newUser.balance" type="number"></md-input>
+                <md-icon>attach_money</md-icon>
+            </md-field>
+        </div>
+
+        <div v-else-if="step===4 " class="createDialog md-layout md-alignment-top-center">
+
+            <md-field class="md-layout-item md-size-80">
+                <label>用户编号</label>
+                <md-select v-model="newEquipment.userId">
+                    <md-option v-for="item in user" :key="item.user_id" :value="item.user_id">{{item.user_id}}
+                    </md-option>
+                </md-select>
+            </md-field>
+
+            <div class="md-layout-item md-size-80">
+                <md-radio v-model="newEquipment.category" value="01" class="md-primary">居民</md-radio>
+                <md-radio v-model="newEquipment.category" value="02">商业</md-radio>
+            </div>
+        </div>
+
+        <md-dialog-actions>
+            <md-button class="md-primary" @click="showDialog = false">取消</md-button>
+            <md-button class="md-primary" @click="showDialog = false;create()">创建</md-button>
+        </md-dialog-actions>
+    </md-dialog>
 
     <md-snackbar md-position="center" :md-duration="3000" :md-active.sync="showSnackbar" md-persistent>
         <span>{{snackbarItem}}</span>
         <md-button class="md-primary" @click="showSnackbar = false">了解</md-button>
     </md-snackbar>
-    <md-button v-if="step =2" class="md-fab md-primary md-fab-bottom-right md-fixed">
+    <md-button v-if="step===2||step===3||step===4" class="md-fab md-primary md-fab-bottom-right md-fixed" @click="add">
         <md-icon>add</md-icon>
     </md-button>
 
@@ -119,9 +213,11 @@
 
 <script>
     Vue.use(VueMaterial.default)
-    const searchCheckRecord = (items, term) => {
-        if (term) {
+    const searchBy = (items, term) => {
+        if (term && app.step === 2) {
             return items.filter(item => ((item.equipment_id + '').includes(term) || (item.recorder).includes(term)))
+        } else if (term && app.step === 4) {
+            return items.filter(item => ((item.equipment_id + '').includes(term) || (item.user_id + '').includes(term) || (item.name).includes(term)))
         }
         return items
     }
@@ -131,18 +227,65 @@
             snackbarItem: null,
             showSnackbar: false,
             menuVisible: false,
-            step: 1,//1首页，2抄表记录，3电力用户，4电力设备
+            showDialog: false,
+            step: 1,
+            newEquipment: {
+                userId: null,
+                category: null
+            },
+            newUser: {
+                name: null,
+                address: null,
+                balance: 0
+            },
             search: null,
             searched: [],
             checkRecord: [],
             equipmentRecord: [],
+            user: []
         },
         methods: {
             toggleMenu () {
                 this.menuVisible = !this.menuVisible
             },
+            add () {
+                if (this.step === 3) {
+                    this.showDialog =true
+                } else if (this.step === 4) {
+                    this.showDialog = true
+                    this.getUserId()
+                }
+            },
+            create () {
+                if (this.step === 3) {
+                    this.createUser()
+                } else if (this.step === 4) {
+                    this.createEquipment()
+                }
+            },
+            createEquipment () {
+                let _this = this
+                axios.post("/equipment/add", this.newEquipment).then(
+                    function (value) {
+                        _this.snackbarItem = "电力设备 " + value.data.data.id + " 创建成功！"
+                        _this.showSnackbar = true
+                        _this.equipmentRecord = value.data.data.equipments
+                        _this.searched = _this.equipmentRecord
+                    })
+            },
+            createUser(){
+                let _this = this
+                axios.post("/user/add", this.newUser).then(
+                    function (value) {
+                        _this.snackbarItem = "用户 " + value.data.data.id + " 创建成功！"
+                        _this.showSnackbar = true
+                        _this.user = value.data.data.users
+                        _this.searched = _this.user
+                    })
+            },
             showRecord () {
                 this.step = 2
+                this.search = null
                 let _this = this
                 axios.get("/check/get", null).then(
                     function (value) {
@@ -151,17 +294,43 @@
                     }
                 )
             },
+            showUser () {
+                this.step = 3
+                this.search = null
+                let _this = this
+                axios.get("/user/get", null).then(
+                    function (value) {
+                        _this.user = value.data.data
+                        _this.searched = _this.user
+                    }
+                )
+            },
             showEquipment () {
                 this.step = 4
+                this.search = null
                 let _this = this
-                axios.get("/equipment/get",null).then(
+                axios.get("/equipment/get", null).then(
                     function (value) {
+                        _this.equipmentRecord = value.data.data
+                        _this.searched = _this.equipmentRecord
+                    }
+                )
+            },
 
+            getUserId () {
+                let _this = this
+                axios.get("/user/id", null).then(
+                    function (value) {
+                        _this.user = value.data.data
                     }
                 )
             },
             searchOnTable () {
-                this.searched = searchCheckRecord(this.checkRecord, this.search)
+                if (this.step === 2) {
+                    this.searched = searchBy(this.checkRecord, this.search)
+                } else if (this.step === 4) {
+                    this.searched = searchBy(this.equipmentRecord, this.search)
+                }
             },
             changeToDate (obj) {
                 if (obj === null || obj === '') {
@@ -180,6 +349,14 @@
 <style>
     .page-container {
         min-height: 100%;
+    }
+
+    .createDialog {
+        width: 500px;
+    }
+
+    .md-menu-content {
+        z-index: 100;
     }
 </style>
 </html>
