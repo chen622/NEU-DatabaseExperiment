@@ -9,6 +9,7 @@
     <link href="https://cdn.bootcss.com/vue-material/1.0.0-beta-8/theme/default.css" rel="stylesheet">
     <script src="https://cdn.bootcss.com/vue/2.5.16/vue.js"></script>
     <script src="https://cdn.bootcss.com/vue-material/1.0.0-beta-8/vue-material.min.js"></script>
+    <script src="https://cdn.bootcss.com/axios/0.18.0/axios.min.js"></script>
 </head>
 
 <body style="background-color: #ffffff">
@@ -33,9 +34,21 @@
             </md-toolbar>
 
             <md-list>
-                <md-list-item >
+                <md-list-item @click="showRecord">
+                    <md-icon>watch</md-icon>
+                    <span class="md-list-item-text">电表信息录入</span>
+                </md-list-item>
+                <md-list-item>
+                    <md-icon>contacts</md-icon>
+                    <span class="md-list-item-text">电力用户查询</span>
+                </md-list-item>
+                <md-list-item @click="showEquipment">
+                    <md-icon>dvr</md-icon>
+                    <span class="md-list-item-text">电力设备查询</span>
+                </md-list-item>
+                <md-list-item>
                     <md-icon>map</md-icon>
-                    <span class="md-list-item-text">景点分布图</span>
+                    <span class="md-list-item-text">电表信息录入</span>
                 </md-list-item>
 
             </md-list>
@@ -43,17 +56,18 @@
 
         <md-app-content style="min-height: 600px">
             <div class="md-layout md-alignment-top-center">
-                <md-card class="md-layout-item md-size-70">
+                <md-card class="md-layout-item md-size-70" v-if="step === 1">
                     <md-card-area>
                         <md-card-media>
                             <img src="/static/img/index.jpg" alt="scene">
                         </md-card-media>
                         <md-card-header>
-                            <div class="md-title"><b>额尔古纳河</b></div>
-                            <div class="md-subhead">黑龙江源头</div>
+                            <div class="md-title"><b>国家电网</b></div>
+                            <div class="md-subhead">国网沈阳供电公司</div>
                         </md-card-header>
-                        <md-card-content style="text-indent: 2em">
-                            额尔古纳河，是黑龙江正源，史称“望建河”，是通古斯语（鄂温克语）honkirnaur的音译，意思为鄂温克江。在《旧唐书》中称之为望建河，在《蒙古秘史》中称之为额尔古涅河，在《元史》中称之为也里古纳河，在《明史》中称之为阿鲁那么连，自清代开始称之为额尔古纳河。位于内蒙古自治区东北部呼伦贝尔地区，为中俄界河。
+                        <md-card-content>
+                            你用电，我用心！
+                            95598
                         </md-card-content>
                     </md-card-area>
                     <md-card-actions md-alignment="right">
@@ -61,8 +75,34 @@
                         <md-button class="md-primary">推荐路线</md-button>
                     </md-card-actions>
                 </md-card>
-            </div>
 
+                <md-table v-model="searched" v-else-if="step===2" md-sort="id" md-sort-order="asc" md-card
+                          class="md-layout-item md-size-90">
+                    <md-table-toolbar>
+                        <div class="md-toolbar-section-start">
+                            <h1 class="md-title">Users</h1>
+                        </div>
+                        <md-field md-clearable class="md-toolbar-section-end">
+                            <md-input placeholder="搜索。。。" v-model="search" @input="searchOnTable"/>
+                        </md-field>
+                    </md-table-toolbar>
+
+                    <md-table-empty-state
+                            md-label="无对应抄表信息"
+                            :md-description="`不存在与 '${search}' 相关的抄表信息. 请尝试检查后重新输入！`">
+
+                    </md-table-empty-state>
+
+                    <md-table-row slot="md-table-row" slot-scope="{ item }">
+                        <md-table-cell md-label="ID" md-sort-by="id" md-numeric>{{ item.check_id }}</md-table-cell>
+                        <md-table-cell md-label="设备编号" md-sort-by="equipment_id">{{ item.equipment_id }}</md-table-cell>
+                        <md-table-cell md-label="本次度数" md-sort-by="degree">{{ item.degree }}</md-table-cell>
+                        <md-table-cell md-label="上次度数" md-sort-by="last_degree">{{ item.last_degree }}</md-table-cell>
+                        <md-table-cell md-label="时间" md-sort-by="time">{{ changeToDate(item.time) }}</md-table-cell>
+                        <md-table-cell md-label="抄表人" md-sort-by="recorder">{{ item.recorder }}</md-table-cell>
+                    </md-table-row>
+                </md-table>
+            </div>
         </md-app-content>
     </md-app>
 
@@ -71,26 +111,70 @@
         <span>{{snackbarItem}}</span>
         <md-button class="md-primary" @click="showSnackbar = false">了解</md-button>
     </md-snackbar>
+    <md-button v-if="step =2" class="md-fab md-primary md-fab-bottom-right md-fixed">
+        <md-icon>add</md-icon>
+    </md-button>
 
 </div>
 
 <script>
     Vue.use(VueMaterial.default)
-
+    const searchCheckRecord = (items, term) => {
+        if (term) {
+            return items.filter(item => ((item.equipment_id + '').includes(term) || (item.recorder).includes(term)))
+        }
+        return items
+    }
     var app = new Vue({
         el: '#app',
         data: {
             snackbarItem: null,
             showSnackbar: false,
-            menuVisible: false
+            menuVisible: false,
+            step: 1,//1首页，2抄表记录，3电力用户，4电力设备
+            search: null,
+            searched: [],
+            checkRecord: [],
+            equipmentRecord: [],
         },
         methods: {
             toggleMenu () {
                 this.menuVisible = !this.menuVisible
+            },
+            showRecord () {
+                this.step = 2
+                let _this = this
+                axios.get("/check/get", null).then(
+                    function (value) {
+                        _this.checkRecord = value.data.data
+                        _this.searched = _this.checkRecord
+                    }
+                )
+            },
+            showEquipment () {
+                this.step = 4
+                let _this = this
+                axios.get("/equipment/get",null).then(
+                    function (value) {
+
+                    }
+                )
+            },
+            searchOnTable () {
+                this.searched = searchCheckRecord(this.checkRecord, this.search)
+            },
+            changeToDate (obj) {
+                if (obj === null || obj === '') {
+                    return 'NaN'
+                }
+                let date = new Date(obj)
+                let y = 1900 + date.getYear()
+                let m = '0' + (date.getMonth() + 1)
+                let d = '0' + date.getDate()
+                return y + '-' + m.substring(m.length - 2, m.length) + '-' + d.substring(d.length - 2, d.length)
             }
         }
     })
-
 </script>
 </body>
 <style>
