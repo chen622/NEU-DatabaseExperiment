@@ -46,6 +46,14 @@ public class UserController {
         return CommonUtil.successJson(getEquipmentAmountAndDebit(list));
     }
 
+    @GetMapping("/balance")
+    public JSONObject getBalance() {
+        String sql = "select * from balance_record";
+        List<Map<String, Object>> list = jdbcTemplate.queryForList(sql);
+
+        return CommonUtil.successJson(getEquipmentAmountAndDebit(list));
+    }
+
     @PostMapping("/add")
     public JSONObject addUser(@RequestBody JSONObject requestJson){
         String sql = "insert user (name,address,balance) values ('" +requestJson.getString("name") +"','"+ requestJson.getString("address")+"',"+ requestJson.getFloat("balance")+")";
@@ -53,7 +61,7 @@ public class UserController {
         int id = jdbcTemplate.queryForObject("select last_insert_id()",Integer.class);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id",id);
-        jsonObject.put("users",getEquipmentAmountAndDebit(jdbcTemplate.queryForList("select * from user")));
+        jsonObject.put("user",getEquipmentAmountAndDebit(jdbcTemplate.queryForList("select * from user")));
 
         return CommonUtil.successJson(jsonObject);
     }

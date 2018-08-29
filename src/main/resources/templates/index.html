@@ -46,9 +46,13 @@
                     <md-icon>dvr</md-icon>
                     <span class="md-list-item-text">电力设备查询</span>
                 </md-list-item>
-                <md-list-item>
-                    <md-icon>map</md-icon>
-                    <span class="md-list-item-text">电表信息录入</span>
+                <md-list-item @click="showBalance">
+                    <md-icon>account_balance_wallet</md-icon>
+                    <span class="md-list-item-text">余额变动查询</span>
+                </md-list-item>
+                <md-list-item @click="showArrear">
+                    <md-icon>attach_money</md-icon>
+                    <span class="md-list-item-text">欠款查询及缴费</span>
                 </md-list-item>
 
             </md-list>
@@ -74,7 +78,7 @@
                         <md-button class="md-primary">缴费</md-button>
                     </md-card-actions>
                 </md-card>
-
+                <!--抄表记录-->
                 <md-table v-model="searched" v-else-if="step===2" md-sort="check_id" md-sort-order="asc" md-card
                           class="md-layout-item md-size-90">
                     <md-table-toolbar>
@@ -102,7 +106,7 @@
                         <md-table-cell md-label="抄表人" md-sort-by="recorder">{{ item.recorder }}</md-table-cell>
                     </md-table-row>
                 </md-table>
-
+                <!--电力用户-->
                 <md-table v-model="searched" v-else-if="step===3" md-sort="user_id" md-sort-order="asc" md-card
                           class="md-layout-item md-size-90">
                     <md-table-toolbar>
@@ -129,7 +133,7 @@
                         <md-table-cell md-label="代缴总额" md-sort-by="debt">{{ item.debt }}</md-table-cell>
                     </md-table-row>
                 </md-table>
-
+                <!--电力设备-->
                 <md-table v-model="searched" v-else-if="step===4" md-sort="equipment_id" md-sort-order="asc" md-card
                           class="md-layout-item md-size-90">
                     <md-table-toolbar>
@@ -156,14 +160,63 @@
                         </md-table-cell>
                     </md-table-row>
                 </md-table>
+                <!--余额变动-->
+                <md-table v-model="searched" v-else-if="step===5" md-sort="time" md-sort-order="asc" md-card
+                          class="md-layout-item md-size-90">
+                    <md-table-toolbar>
+                        <div class="md-toolbar-section-start">
+                            <h1 class="md-title">余额变动</h1>
+                        </div>
+                        <md-field md-clearable class="md-toolbar-section-end">
+                            <md-input placeholder="搜索。。。" v-model="search" @input="searchOnTable"/>
+                        </md-field>
+                    </md-table-toolbar>
+
+                    <md-table-empty-state
+                            md-label="无对应余额变动记录"
+                            :md-description="`不存在与 '${search}' 相关的余额变动信息. 请尝试检查后重新输入！`">
+                    </md-table-empty-state>
+
+                    <md-table-row slot="md-table-row" slot-scope="{ item }">
+                        <md-table-cell md-label="用户Id" md-sort-by="user_id">{{item.user_id}}</md-table-cell>
+                        <md-table-cell md-label="时间" md-sort-by="time">{{ changeToDate(item.time)}}</md-table-cell>
+                        <md-table-cell md-label="原始金额" md-sort-by="last_amount">{{ item.last_amount }}</md-table-cell>
+                        <md-table-cell md-label="改后金额" md-sort-by="amount">{{item.amount}}</md-table-cell>
+                        <md-table-cell md-label="变动金额" md-sort-by="change" ><span :style="(item.amount-item.last_amount)>0?'color: #448aff':'color: #ff5252'">{{ item.amount-item.last_amount }}</span></md-table-cell>
+                    </md-table-row>
+                </md-table>
 
             </div>
         </md-app-content>
     </md-app>
 
     <md-dialog :md-active.sync="showDialog">
-        <md-dialog-title>创建新设备</md-dialog-title>
-        <div v-if="step===3" class="createDialog md-layout md-alignment-top-center">
+        <md-dialog-title>新增</md-dialog-title>
+
+        <div v-if="step===2" class="createDialog md-layout md-alignment-top-center">
+            <md-field class="md-layout-item md-size-80">
+                <label>设备编号</label>
+                <md-select v-model="newRecord.equipmentId">
+                    <md-option v-for="item in equipmentIds" :key="item.equipment_id" :value="item.equipment_id">
+                        {{item.equipment_id}}
+                    </md-option>
+                </md-select>
+            </md-field>
+            <md-datepicker v-model="newRecord.time" class="md-layout-item md-size-80">
+                <label>抄表日期</label>
+            </md-datepicker>
+            <md-field class="md-layout-item md-size-80">
+                <label>设备读数</label>
+                <md-input v-model="newRecord.degree" type="number"></md-input>
+            </md-field>
+            <md-field class="md-layout-item md-size-80">
+                <label>抄表人</label>
+                <md-input v-model="newRecord.recorder"></md-input>
+            </md-field>
+
+        </div>
+
+        <div v-else-if="step===3" class="createDialog md-layout md-alignment-top-center">
             <md-field class="md-layout-item md-size-80">
                 <label>姓名</label>
                 <md-input v-model="newUser.name"></md-input>
@@ -215,9 +268,13 @@
     Vue.use(VueMaterial.default)
     const searchBy = (items, term) => {
         if (term && app.step === 2) {
-            return items.filter(item => ((item.equipment_id + '').includes(term) || (item.recorder).includes(term)))
+            return items.filter(item => ((item.equipment_id + '').includes(term) || (app.changeToDate(item.time)).includes(term) || (item.recorder).includes(term)))
+        } else if (term && app.step === 3) {
+            return items.filter(item => ((item.user_id + '').includes(term) || (item.address).includes(term) || (item.name).includes(term)))
         } else if (term && app.step === 4) {
             return items.filter(item => ((item.equipment_id + '').includes(term) || (item.user_id + '').includes(term) || (item.name).includes(term)))
+        } else if (term && app.step === 5) {
+            return items.filter(item => ((item.user_id + '').includes(term) || (app.changeToDate(item.time)).includes(term)))
         }
         return items
     }
@@ -228,7 +285,7 @@
             showSnackbar: false,
             menuVisible: false,
             showDialog: false,
-            step: 1,
+            step: 1,//2抄表，3用户，4设备，5余额
             newEquipment: {
                 userId: null,
                 category: null
@@ -238,30 +295,55 @@
                 address: null,
                 balance: 0
             },
+            newRecord: {
+                equipmentId: null,
+                degree: null,
+                recorder: null,
+                time: null
+            },
             search: null,
             searched: [],
             checkRecord: [],
             equipmentRecord: [],
-            user: []
+            balanceRecord:[],
+            arrearRecord:[],
+            user: [],
+            equipmentIds: []
         },
         methods: {
             toggleMenu () {
                 this.menuVisible = !this.menuVisible
             },
             add () {
-                if (this.step === 3) {
-                    this.showDialog =true
-                } else if (this.step === 4) {
+                if (this.step === 2) {
+                    this.getEquipmentId()
                     this.showDialog = true
+                }
+                else if (this.step === 3) {
+                    this.showDialog = true
+                } else if (this.step === 4) {
                     this.getUserId()
+                    this.showDialog = true
                 }
             },
             create () {
-                if (this.step === 3) {
+                if (this.step === 2) {
+                    this.createCheck()
+                } else if (this.step === 3) {
                     this.createUser()
                 } else if (this.step === 4) {
                     this.createEquipment()
                 }
+            },
+            createCheck () {
+                let _this = this
+                axios.post("/check/add", this.newRecord).then(
+                    function (value) {
+                        _this.snackbarItem = "抄表记录 " + value.data.data.id + " 创建成功！"
+                        _this.showSnackbar = true
+                        _this.checkRecord = value.data.data.checkRecord
+                        _this.searched = _this.checkRecord
+                    })
             },
             createEquipment () {
                 let _this = this
@@ -269,17 +351,17 @@
                     function (value) {
                         _this.snackbarItem = "电力设备 " + value.data.data.id + " 创建成功！"
                         _this.showSnackbar = true
-                        _this.equipmentRecord = value.data.data.equipments
+                        _this.equipmentRecord = value.data.data.equipment
                         _this.searched = _this.equipmentRecord
                     })
             },
-            createUser(){
+            createUser () {
                 let _this = this
                 axios.post("/user/add", this.newUser).then(
                     function (value) {
                         _this.snackbarItem = "用户 " + value.data.data.id + " 创建成功！"
                         _this.showSnackbar = true
-                        _this.user = value.data.data.users
+                        _this.user = value.data.data.user
                         _this.searched = _this.user
                     })
             },
@@ -316,7 +398,36 @@
                     }
                 )
             },
-
+            showBalance () {
+                this.step = 5
+                this.search = null
+                let _this = this
+                axios.get("/user/balance", null).then(
+                    function (value) {
+                        _this.balanceRecord = value.data.data
+                        _this.searched = _this.balanceRecord
+                    }
+                )
+            },
+            showArrear(){
+                this.step = 6
+                this.search = null
+                let _this = this
+                axios.get("/arrear/get", null).then(
+                    function (value) {
+                        _this.arrearRecord = value.data.data
+                        _this.searched = _this.arrearRecord
+                    }
+                )
+            }
+            getEquipmentId () {
+                let _this = this
+                axios.get("/equipment/id", null).then(
+                    function (value) {
+                        _this.equipmentIds = value.data.data
+                    }
+                )
+            },
             getUserId () {
                 let _this = this
                 axios.get("/user/id", null).then(
@@ -328,8 +439,12 @@
             searchOnTable () {
                 if (this.step === 2) {
                     this.searched = searchBy(this.checkRecord, this.search)
+                } else if (this.step === 3) {
+                    this.searched = searchBy(this.user, this.search)
                 } else if (this.step === 4) {
                     this.searched = searchBy(this.equipmentRecord, this.search)
+                } else if (this.step === 5){
+                    this.searched = searchBy(this.balanceRecord,this.search)
                 }
             },
             changeToDate (obj) {

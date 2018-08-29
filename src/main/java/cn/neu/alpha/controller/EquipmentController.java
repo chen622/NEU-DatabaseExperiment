@@ -20,8 +20,6 @@ public class EquipmentController {
     public JSONObject getEquipment(){
         String sql = "select * from equipment natural join user";
         List<Map<String, Object>> list =  jdbcTemplate.queryForList(sql);
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.addAll(list);
         return CommonUtil.successJson(list);
     }
 
@@ -32,8 +30,14 @@ public class EquipmentController {
         int id = jdbcTemplate.queryForObject("select last_insert_id()",Integer.class);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id",id);
-        jsonObject.put("equipments",jdbcTemplate.queryForList("select * from equipment natural join user"));
+        jsonObject.put("equipment",jdbcTemplate.queryForList("select * from equipment natural join user"));
         return CommonUtil.successJson(jsonObject);
     }
 
+    @GetMapping("/id")
+    public JSONObject getEquipmentIds(){
+        String sql = "select equipment_id from equipment";
+        List<Map<String, Object>> list =  jdbcTemplate.queryForList(sql);
+        return CommonUtil.successJson(list);
+    }
 }
