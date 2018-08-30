@@ -9,7 +9,8 @@ public enum ErrorEnum {
     * error message
     * */
     E_400("400", "请求异常，请稍后再试!"),
-    E_502("501","参数异常！");
+    E_501("501","参数异常！"),
+    E_502("502","缴费金额异常");
 
 
     private String errorCode;

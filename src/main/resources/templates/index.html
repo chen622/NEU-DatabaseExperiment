@@ -20,6 +20,11 @@
                 <md-icon>menu</md-icon>
             </md-button>
             <span class="md-title">银行代收费系统</span>
+            <div class="md-toolbar-section-end">
+                <md-button @click="refresh">
+                    <md-icon>refresh</md-icon>
+                </md-button>
+            </div>
         </md-app-toolbar>
 
         <md-app-drawer :md-active.sync="menuVisible" md-persistent="full" style="width: 20%">
@@ -54,7 +59,10 @@
                     <md-icon>attach_money</md-icon>
                     <span class="md-list-item-text">欠款查询及缴费</span>
                 </md-list-item>
-
+                <md-list-item @click="showPayment">
+                    <md-icon>compare_arrows</md-icon>
+                    <span class="md-list-item-text">缴费记录</span>
+                </md-list-item>
             </md-list>
         </md-app-drawer>
 
@@ -182,10 +190,74 @@
                         <md-table-cell md-label="时间" md-sort-by="time">{{ changeToDate(item.time)}}</md-table-cell>
                         <md-table-cell md-label="原始金额" md-sort-by="last_amount">{{ item.last_amount }}</md-table-cell>
                         <md-table-cell md-label="改后金额" md-sort-by="amount">{{item.amount}}</md-table-cell>
-                        <md-table-cell md-label="变动金额" md-sort-by="change" ><span :style="(item.amount-item.last_amount)>0?'color: #448aff':'color: #ff5252'">{{ item.amount-item.last_amount }}</span></md-table-cell>
+                        <md-table-cell md-label="变动金额" md-sort-by="change"><span
+                                :style="(item.amount-item.last_amount)>0?'color: #448aff':'color: #ff5252'">{{ (item.amount-item.last_amount).toFixed(2) }}</span>
+                        </md-table-cell>
                     </md-table-row>
                 </md-table>
+                <!--欠费记录-->
+                <md-table v-model="searched" v-else-if="step===6" md-sort="arrear_id" md-sort-order="asc" md-card
+                          class="md-layout-item md-size-90">
+                    <md-table-toolbar>
+                        <div class="md-toolbar-section-start">
+                            <h1 class="md-title">欠费账单</h1>
+                        </div>
+                        <md-field md-clearable class="md-toolbar-section-end">
+                            <md-input placeholder="搜索。。。" v-model="search" @input="searchOnTable"/>
+                        </md-field>
+                    </md-table-toolbar>
 
+                    <md-table-empty-state
+                            md-label="无对应欠费记录"
+                            :md-description="`不存在与 '${search}' 相关的欠费信息. 请尝试检查后重新输入！`">
+                    </md-table-empty-state>
+
+                    <md-table-row slot="md-table-row" slot-scope="{ item }">
+                        <md-table-cell md-label="Id" md-sort-by="arrear_id">{{item.arrear_id}}</md-table-cell>
+                        <md-table-cell md-label="设备Id" md-sort-by="equipment_id">{{item.equipment_id}}</md-table-cell>
+                        <md-table-cell md-label="创建时间" md-sort-by="create_time">{{
+                            changeToDateTime(item.create_time)}}
+                        </md-table-cell>
+                        <md-table-cell md-label="本金" md-sort-by="principal">{{ item.principal }}</md-table-cell>
+                        <md-table-cell md-label="完整代缴金额" md-sort-by="amount">{{item.amount}}</md-table-cell>
+                        <md-table-cell md-label="滞纳天数" md-sort-by="time">{{
+                            parseInt((new Date(item.edit_time)-new Date(item.create_time))/(1000 * 60 * 60 *
+                            24))>30?(parseInt((new Date(item.edit_time)-new Date(item.create_time))/(1000 * 60 * 60 *
+                            24))-30): 0}}
+                        </md-table-cell>
+                    </md-table-row>
+                </md-table>
+                <!--缴费记录-->
+                <md-table v-model="searched" v-else-if="step===7" md-sort="payment_id" md-sort-order="asc" md-card
+                          class="md-layout-item md-size-90">
+                    <md-table-toolbar>
+                        <div class="md-toolbar-section-start">
+                            <h1 class="md-title">缴费清单</h1>
+                        </div>
+                        <md-field md-clearable class="md-toolbar-section-end">
+                            <md-input placeholder="搜索。。。" v-model="search" @input="searchOnTable"/>
+                        </md-field>
+                    </md-table-toolbar>
+
+                    <md-table-empty-state
+                            md-label="无对应缴费记录"
+                            :md-description="`不存在与 '${search}' 相关的缴费信息. 请尝试检查后重新输入！`">
+                    </md-table-empty-state>
+
+                    <md-table-row slot="md-table-row" slot-scope="{ item }">
+                        <md-table-cell md-label="Id" md-sort-by="payment_id">{{item.payment_id}}</md-table-cell>
+                        <md-table-cell md-label="缴费设备Id" md-sort-by="equipment_id">{{item.equipment_id}}</md-table-cell>
+                        <md-table-cell md-label="流水号" md-sort-by="serial_id">{{item.serial_id}}</md-table-cell>
+                        <md-table-cell md-label="时间" md-sort-by="time">{{
+                            changeToDateTime(item.time)}}
+                        </md-table-cell>
+                        <md-table-cell md-label="金额" md-sort-by="amount">{{ item.amount }}</md-table-cell>
+                        <md-table-cell md-label="银行" md-sort-by="bank">{{item.name}}</md-table-cell>
+                        <md-table-cell md-label="是否冲正" md-sort-by="edit"><span
+                                :style="item.is_edit?'color: #ff5252':'color: #448aff'">{{item.is_edit?'是':'否'}}</span>
+                        </md-table-cell>
+                    </md-table-row>
+                </md-table>
             </div>
         </md-app-content>
     </md-app>
@@ -248,6 +320,57 @@
             </div>
         </div>
 
+        <div v-else-if="step===6 " class="createDialog md-layout md-alignment-top-center">
+
+            <md-field class="md-layout-item md-size-80">
+                <label>设备编号</label>
+                <md-select v-model="newPay.equipmentId">
+                    <md-option v-for="item in equipmentIds" :key="item.equipment_id" :value="item.equipment_id">
+                        {{item.equipment_id}}
+                    </md-option>
+                </md-select>
+            </md-field>
+
+            <md-field class="md-layout-item md-size-80">
+                <label>余额</label>
+                <md-input v-model="newPay.amount" type="number"></md-input>
+                <md-icon>attach_money</md-icon>
+            </md-field>
+
+            <md-field class="md-layout-item md-size-80">
+                <label>银行用户Id</label>
+                <md-input v-model="newPay.bankUserId" type="number"></md-input>
+            </md-field>
+
+            <md-field class="md-layout-item md-size-80">
+                <label>缴费银行</label>
+                <md-select v-model="newPay.bankId">
+                    <md-option v-for="item in banks" :key="item.id" :value="item.id">{{item.name}}
+                    </md-option>
+                </md-select>
+            </md-field>
+        </div>
+
+        <div v-else-if="step===7 " class="createDialog md-layout md-alignment-top-center">
+
+            <md-field class="md-layout-item md-size-80">
+                <label>清单编号</label>
+                <md-select v-model="newRecovery.serialId">
+                    <md-option v-for="item in serialIds" :key="item.serial_id" :value="item.serial_id">{{item.serial_id}}
+                    </md-option>
+                </md-select>
+            </md-field>
+
+            <md-field class="md-layout-item md-size-80">
+                <label>正确设备</label>
+                <md-select v-model="newRecovery.equipmentId">
+                    <md-option v-for="item in equipmentIds" :key="item.equipment_id" :value="item.equipment_id">
+                        {{item.equipment_id}}
+                    </md-option>
+                </md-select>
+            </md-field>
+        </div>
+
         <md-dialog-actions>
             <md-button class="md-primary" @click="showDialog = false">取消</md-button>
             <md-button class="md-primary" @click="showDialog = false;create()">创建</md-button>
@@ -258,7 +381,9 @@
         <span>{{snackbarItem}}</span>
         <md-button class="md-primary" @click="showSnackbar = false">了解</md-button>
     </md-snackbar>
-    <md-button v-if="step===2||step===3||step===4" class="md-fab md-primary md-fab-bottom-right md-fixed" @click="add">
+    <md-button v-if="step===2||step===3||step===4||step===6||step===7"
+               class="md-fab md-primary md-fab-bottom-right md-fixed"
+               @click="add">
         <md-icon>add</md-icon>
     </md-button>
 
@@ -275,6 +400,10 @@
             return items.filter(item => ((item.equipment_id + '').includes(term) || (item.user_id + '').includes(term) || (item.name).includes(term)))
         } else if (term && app.step === 5) {
             return items.filter(item => ((item.user_id + '').includes(term) || (app.changeToDate(item.time)).includes(term)))
+        } else if (term && app.step === 6) {
+            return items.filter(item => ((item.arrear_id + '').includes(term) || (item.equipment_id + '').includes(term) || (app.changeToDate(item.create_time)).includes(term)))
+        } else if (term && app.step === 7) {
+            return items.filter(item => ((item.payment_id + '').includes(term) || (item.serial_id + '').includes(term) || (item.equipment_id + '').includes(term) || (app.changeToDate(item.time)).includes(term)))
         }
         return items
     }
@@ -285,7 +414,7 @@
             showSnackbar: false,
             menuVisible: false,
             showDialog: false,
-            step: 1,//2抄表，3用户，4设备，5余额
+            step: 1,//2抄表，3用户，4设备，5余额，6欠费与缴费
             newEquipment: {
                 userId: null,
                 category: null
@@ -301,14 +430,40 @@
                 recorder: null,
                 time: null
             },
+            newPay: {
+                equipmentId: null,
+                amount: null,
+                bankId: null,
+                bankUserId: null
+            },
+            newRecovery: {
+                serialId: null,
+                equipmentId: null
+            },
             search: null,
             searched: [],
             checkRecord: [],
             equipmentRecord: [],
-            balanceRecord:[],
-            arrearRecord:[],
+            balanceRecord: [],
+            arrearRecord: [],
+            paymentRecord: [],
             user: [],
-            equipmentIds: []
+            equipmentIds: [],
+            serialIds: [],
+            banks: [
+                {
+                    id: 1,
+                    name: "中国招商银行"
+                },
+                {
+                    id: 2,
+                    name: "中国建设银行"
+                },
+                {
+                    id: 3,
+                    name: "中国工商银行"
+                }
+            ]
         },
         methods: {
             toggleMenu () {
@@ -324,6 +479,13 @@
                 } else if (this.step === 4) {
                     this.getUserId()
                     this.showDialog = true
+                } else if (this.step === 6) {
+                    this.getEquipmentId()
+                    this.showDialog = true
+                } else if (this.step === 7) {
+                    this.getSerial()
+                    this.getEquipmentId()
+                    this.showDialog = true
                 }
             },
             create () {
@@ -333,7 +495,41 @@
                     this.createUser()
                 } else if (this.step === 4) {
                     this.createEquipment()
+                } else if (this.step === 6) {
+                    this.createPay()
+                } else if (this.step === 7) {
+                    this.createRecovery()
                 }
+            },
+            createRecovery () {
+                let _this = this
+                axios.post("/payment/recovery", this.newRecovery).then(
+                    function (value) {
+                        if (value.data.code == '100') {
+                            _this.snackbarItem = "冲正成功！"
+                            _this.showSnackbar = true
+                            _this.paymentRecord = value.data.data
+                            _this.searched = _this.paymentRecord
+                        }
+                    })
+            },
+            createPay () {
+                let _this = this
+                axios.post("/arrear/pay", this.newPay).then(
+                    function (value) {
+                        if (value.data.code == '100') {
+                            _this.snackbarItem = "缴费记录 " + value.data.data.id + " 创建成功！"
+                            _this.showSnackbar = true
+                            _this.arrearRecord = value.data.data.arrearRecord
+                            _this.searched = _this.arrearRecord
+                        } else if (value.data.code == '501') {
+                            _this.snackbarItem = "设备不存在！"
+                            _this.showSnackbar = true
+                        } else if (value.data.code == '502') {
+                            _this.snackbarItem = "缴费金额异常！"
+                            _this.showSnackbar = true
+                        }
+                    })
             },
             createCheck () {
                 let _this = this
@@ -409,7 +605,7 @@
                     }
                 )
             },
-            showArrear(){
+            showArrear () {
                 this.step = 6
                 this.search = null
                 let _this = this
@@ -419,7 +615,18 @@
                         _this.searched = _this.arrearRecord
                     }
                 )
-            }
+            },
+            showPayment () {
+                this.step = 7
+                this.search = null
+                let _this = this
+                axios.get("/payment/get", null).then(
+                    function (value) {
+                        _this.paymentRecord = value.data.data
+                        _this.searched = _this.paymentRecord
+                    }
+                )
+            },
             getEquipmentId () {
                 let _this = this
                 axios.get("/equipment/id", null).then(
@@ -436,6 +643,23 @@
                     }
                 )
             },
+            getSerial () {
+                let _this = this
+                axios.get("/payment/serial", null).then(
+                    function (value) {
+                        _this.serialIds = value.data.data
+                    }
+                )
+            },
+            refresh () {
+                let _this = this
+                axios.get("/arrear/refresh", null).then(
+                    function (value) {
+                        _this.snackbarItem = "账单更新成功"
+                        _this.showSnackbar = true
+                    }
+                )
+            },
             searchOnTable () {
                 if (this.step === 2) {
                     this.searched = searchBy(this.checkRecord, this.search)
@@ -443,8 +667,12 @@
                     this.searched = searchBy(this.user, this.search)
                 } else if (this.step === 4) {
                     this.searched = searchBy(this.equipmentRecord, this.search)
-                } else if (this.step === 5){
-                    this.searched = searchBy(this.balanceRecord,this.search)
+                } else if (this.step === 5) {
+                    this.searched = searchBy(this.balanceRecord, this.search)
+                } else if (this.step === 6) {
+                    this.searched = searchBy(this.arrearRecord, this.search)
+                } else if (this.step === 7) {
+                    this.searched = searchBy(this.paymentRecord, this.search)
                 }
             },
             changeToDate (obj) {
@@ -456,6 +684,18 @@
                 let m = '0' + (date.getMonth() + 1)
                 let d = '0' + date.getDate()
                 return y + '-' + m.substring(m.length - 2, m.length) + '-' + d.substring(d.length - 2, d.length)
+            },
+            changeToDateTime (obj) {
+                if (obj === null || obj === '') {
+                    return 'NaN'
+                }
+                let date = new Date(obj)
+                let y = 1900 + date.getYear()
+                let m = '0' + (date.getMonth() + 1)
+                let d = '0' + date.getDate()
+                let h = '0' + (date.getHours())
+                let minute = '0' + (date.getMinutes())
+                return y + '-' + m.substring(m.length - 2, m.length) + '-' + d.substring(d.length - 2, d.length) + ' ' + h.substring(h.length - 2, h.length) + ':' + minute.substring(minute.length - 2, minute.length)
             }
         }
     })

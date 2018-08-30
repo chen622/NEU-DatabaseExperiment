@@ -33,8 +33,6 @@ public class UserController {
     public JSONObject getUserId() {
         String sql = "select user_id from user";
         List<Map<String, Object>> list = jdbcTemplate.queryForList(sql);
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.addAll(list);
         return CommonUtil.successJson(list);
     }
 
@@ -42,7 +40,6 @@ public class UserController {
     public JSONObject getUser() {
         String sql = "select * from user";
         List<Map<String, Object>> list = jdbcTemplate.queryForList(sql);
-
         return CommonUtil.successJson(getEquipmentAmountAndDebit(list));
     }
 

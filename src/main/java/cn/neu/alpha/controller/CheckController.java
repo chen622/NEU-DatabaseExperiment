@@ -23,8 +23,6 @@ public class CheckController {
     public JSONObject getCheck() {
         String sql = "select * from check_record";
         List<Map<String, Object>> list = jdbcTemplate.queryForList(sql);
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.addAll(list);
         return CommonUtil.successJson(list);
     }
 
